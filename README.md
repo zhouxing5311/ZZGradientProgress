@@ -32,7 +32,11 @@ circle3.progress = 0.6;
 
 ```
 
+
 **部分样式**
+</br>
 ![demo](https://github.com/zhouxing5311/ZZGradientProgress/blob/master/images/demo.png)
+
+
 
 年后更新渐变进度条的实现过程及相关问题。
