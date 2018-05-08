@@ -105,7 +105,7 @@
     CGRect r = self.bounds;
     
     if (r.size.width > r.size.height)
-        r.size.width=r.size.height;
+    r.size.width=r.size.height;
     else r.size.height=r.size.width;
     
     [self drawWithStartAngle:_startAngle
@@ -127,7 +127,7 @@
         [basePath setLineWidth:_strokeWidth];
         [_pathBackColor setStroke];
         [basePath stroke];
-
+        
     }
     
     for (int i = 0;i < subdivCount; i++) {
@@ -143,27 +143,38 @@
         
         CGFloat nowStartAngle = startAngle+i*itemAngle;
         CGFloat nowEndAngle = startAngle+(i+1)*itemAngle;
+        
+        
         //当进度为0时和最后一个线条不加0.01。只有中间连接部分加
-        if (itemAngle != 0 && i != subdivCount-1) {
-            nowEndAngle += 0.01;
+        if (itemAngle != 0) {
+            
+            //当roundstyle=YES时，i=0和i=subdivCount-1时需要处理连接部分的空余部分
+            if (((i==subdivCount-1)&&(_roundStyle==YES)) || i!=subdivCount-1) {
+                nowEndAngle += 0.01;
+            }
+            
+            if (_roundStyle == YES && i==0) {
+                nowStartAngle -= 0.01;
+            }
         }
+        
         //draw item path
         UIBezierPath *currentPath = [UIBezierPath bezierPathWithArcCenter:center radius:radius startAngle:nowStartAngle endAngle:nowEndAngle clockwise:YES];
         [currentPath setLineWidth:_strokeWidth];
         [currentColor setStroke];
         [currentPath stroke];
-
-        if (_roundStyle && (i==0 || i==subdivCount-1)) {
+        
+        if (_roundStyle && (i==0 || i==subdivCount-1) && nowStartAngle != nowEndAngle) {
             //画半圆
             UIBezierPath *halfCirclePath = [UIBezierPath bezierPath];
             if (i == 0) {
                 //first
-                CGPoint startCenter = CGPointMake(center.x+radius*cosf(nowStartAngle+0.01), center.y+radius*sinf(nowStartAngle+0.01));
-                [halfCirclePath addArcWithCenter:startCenter radius:0.5*_strokeWidth startAngle:nowStartAngle endAngle:nowStartAngle+M_PI clockwise:NO];
+                CGPoint startCenter = CGPointMake(center.x+radius*cosf(startAngle+i*itemAngle), center.y+radius*sinf(startAngle+i*itemAngle));
+                [halfCirclePath addArcWithCenter:startCenter radius:0.5*_strokeWidth startAngle:startAngle+i*itemAngle endAngle:startAngle+i*itemAngle+M_PI clockwise:NO];
             } else {
                 //last
-                CGPoint endCenter = CGPointMake(center.x+radius*cosf(nowEndAngle-0.01), center.y+radius*sinf(nowEndAngle-0.01));
-                [halfCirclePath addArcWithCenter:endCenter radius:0.5*_strokeWidth startAngle:nowEndAngle endAngle:nowEndAngle+M_PI clockwise:YES];
+                CGPoint endCenter = CGPointMake(center.x+radius*cosf(startAngle+(i+1)*itemAngle), center.y+radius*sinf(startAngle+(i+1)*itemAngle));
+                [halfCirclePath addArcWithCenter:endCenter radius:0.5*_strokeWidth startAngle:startAngle+(i+1)*itemAngle endAngle:startAngle+(i+1)*itemAngle+M_PI clockwise:YES];
             }
             
             [halfCirclePath closePath];
@@ -196,7 +207,7 @@
             [currentText drawInRect:r withAttributes:attributes];
         }
     }
-
+    
 }
 
 - (void)setProgress:(CGFloat)progress {
