@@ -1,5 +1,8 @@
 # ZZGradientProgress
-通过Quartz2D实现的一款颜色曲线渐变的进度条。在Stack Overflow [alecail](https://stackoverflow.com/questions/11783114/draw-outer-half-circle-with-gradient-using-core-graphics-in-ios)的思路下实现了此进度条。如果你使用过ZZCircleProgress，那么ZZCircleProgress所实现的功能我已经全部集成到了此款渐变色进度条。
+* 通过Quartz2D实现的一款颜色曲线渐变的进度条。
+* <del>在Stack Overflow [alecail](https://stackoverflow.com/questions/11783114/draw-outer-half-circle-with-gradient-using-core-graphics-in-ios)的思路下实现了此进度条。</del>
+* 之前采用画梯形的方式创建每一个渐变色item的方式比较复杂。涉及到的变量及计算比较多，而且存在内存泄漏问题。现改为使用UIBezierPath绘制每一个圆弧item。理解起来会更简单，而且不存在内存泄漏。其他使用方式没有变化。有个问题就是draw text绘制的文本一直有锯齿，不知道什么原因导致的。欢迎发现问题的同学与我交流。qq：1098660224 或提issues。
+* 如果你使用过ZZCircleProgress，那么ZZCircleProgress所实现的功能我已经全部集成到了此款渐变色进度条。
 
 **主要特色**
 ```

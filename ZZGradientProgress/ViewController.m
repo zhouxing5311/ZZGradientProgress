@@ -61,7 +61,7 @@
     circle2.showPathBack = YES;
     circle2.pathBackColor = [UIColor lightGrayColor];
     circle2.colorGradient = NO;
-    
+
     circle2.progress = 0.6;
     [self.view addSubview:circle2];
     UILabel *label2 = [[UILabel alloc] init];
@@ -69,9 +69,9 @@
     [label2 sizeToFit];
     [label2 setCenter:CGPointMake(CGRectGetMidX(circle2.frame), CGRectGetMaxY(circle2.frame)+10)];
     [self.view addSubview:label2];
-    
-    
-    
+
+
+
     //3.自定义动画时长、不同进度动画时间相同、进度从上次开始变化、自定义进度文本、显示默认小圆点
     circle3 = [[ZZGradientProgress alloc] initWithFrame:CGRectMake(xCrack, yCrack*2+itemWidth, itemWidth, itemWidth) startColor:[UIColor yellowColor] endColor:[UIColor blueColor] startAngle:-255 reduceAngle:30 strokeWidth:10];
     circle3.animationDuration = 3;
@@ -80,7 +80,7 @@
     circle3.textColor = [UIColor redColor];
     circle3.textFont = [UIFont systemFontOfSize:14];
     circle3.showPoint = YES;
-    
+
     circle3.progress = 0.6;
     [self.view addSubview:circle3];
     UILabel *label3 = [[UILabel alloc] init];
@@ -88,16 +88,16 @@
     [label3 sizeToFit];
     [label3 setCenter:CGPointMake(CGRectGetMidX(circle3.frame), CGRectGetMaxY(circle3.frame)+10)];
     [self.view addSubview:label3];
-    
 
-    
+
+
     //4.自定义动画时长、进度越大动画时长越久、自定义小圆点图片
     circle4 = [[ZZGradientProgress alloc] initWithFrame:CGRectMake(xCrack*2+itemWidth, yCrack*2+itemWidth, itemWidth, itemWidth) startColor:ZZRGB(175, 202, 238) endColor:ZZRGB(4, 103, 238) startAngle:-90 reduceAngle:0 strokeWidth:20];
     circle4.animationDuration = 3;
     circle4.animationSameTime = NO;
     circle4.showPoint = YES;
     circle4.pointImage = [UIImage imageNamed:@"ball"];
-    
+
     circle4.progress = 0.6;
     [self.view addSubview:circle4];
     UILabel *label4 = [[UILabel alloc] init];

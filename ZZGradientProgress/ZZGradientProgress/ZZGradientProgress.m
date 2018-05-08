@@ -98,14 +98,9 @@
     NSBundle *resourcesBundle = [NSBundle bundleWithPath:[mainBundle pathForResource:@"ZZGradientProgress" ofType:@"bundle"]];
     _pointImage = [UIImage imageNamed:@"circle_point1" inBundle:resourcesBundle compatibleWithTraitCollection:nil];
 }
-
--(void)drawRect:(CGRect)rect {
-    
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
+- (void)drawRect:(CGRect)rect {
     
     [self.backgroundColor set];
-    
-    UIRectFill(self.bounds);
     
     CGRect r = self.bounds;
     
@@ -113,48 +108,32 @@
         r.size.width=r.size.height;
     else r.size.height=r.size.width;
     
-    [self drawGradientInContext:ctx
-                  startingAngle:_startAngle
-                       endAngle:_startAngle + _fakeProgress*(2*M_PI - _reduceAngle)
-                      intRadius:_radius - _strokeWidth
-                      outRadius:_radius - 1
-                     withSubdiv:_subdivCount<=5?5:_subdivCount
-                     withCenter:CGPointMake(CGRectGetMidX(r), CGRectGetMidY(r))];
+    [self drawWithStartAngle:_startAngle
+                    endAngle:_startAngle + _fakeProgress*(2*M_PI - _reduceAngle)
+                      radius:_radius-_strokeWidth/2.0
+                 subdivCount:_subdivCount<=5?5:_subdivCount
+                      center:CGPointMake(CGRectGetMidX(r), CGRectGetMidY(r))];
     
 }
 
-- (void)drawGradientInContext:(CGContextRef)ctx startingAngle:(float)startAngle endAngle:(float)endAngle intRadius:(CGFloat)intRadius outRadius:(CGFloat)outRadius withSubdiv:(int)subdivCount withCenter:(CGPoint)center {
+- (void)drawWithStartAngle:(float)startAngle endAngle:(float)endAngle radius:(CGFloat)radius subdivCount:(int)subdivCount center:(CGPoint)center {
     
     if (_showPathBack) {
         //背景线条
-        UIBezierPath *basePath = [UIBezierPath bezierPathWithArcCenter:center radius:outRadius-_strokeWidth/2.0 + 0.5 startAngle:_startAngle endAngle:_startAngle + 2*M_PI - _reduceAngle clockwise:YES];
-        CGContextSetLineWidth(ctx, _strokeWidth);
+        UIBezierPath *basePath = [UIBezierPath bezierPathWithArcCenter:center radius:radius startAngle:_startAngle endAngle:_startAngle+(2*M_PI-_reduceAngle) clockwise:YES];
         if (_roundStyle) {
-            CGContextSetLineCap(ctx, kCGLineCapRound);
+            [basePath setLineCapStyle:kCGLineCapRound];
         }
+        [basePath setLineWidth:_strokeWidth];
         [_pathBackColor setStroke];
-        CGContextAddPath(ctx, basePath.CGPath);
-        CGContextStrokePath(ctx);
+        [basePath stroke];
+
     }
-    
-    float angleDelta = (endAngle - startAngle)/subdivCount;//每一块的角度
-    
-    CGPoint p0,p1,p2,p3;
-    
-    float currentAngle = startAngle;
-    p0 = [self pointForTrapezoidWithAngle:currentAngle andRadius:intRadius forCenter:center];
-    p3 = [self pointForTrapezoidWithAngle:currentAngle andRadius:outRadius forCenter:center];
-    CGMutablePathRef innerEnveloppe = CGPathCreateMutable(),
-    outerEnveloppe = CGPathCreateMutable();
-    
-    CGPathMoveToPoint(outerEnveloppe, 0, p3.x, p3.y);
-    CGPathMoveToPoint(innerEnveloppe, 0, p0.x, p0.y);
-    CGContextSaveGState(ctx);
-    CGContextSetLineWidth(ctx, 1);
     
     for (int i = 0;i < subdivCount; i++) {
         float fraction = (float)i/subdivCount;
         float colorFraction = fraction;
+        float itemAngle = (endAngle - startAngle)/subdivCount;
         
         if (!_colorGradient) {
             colorFraction = _fakeProgress*i/subdivCount;
@@ -162,83 +141,44 @@
         
         UIColor *currentColor = [self getGradientColor:colorFraction];
         
-        currentAngle = startAngle + fraction*(endAngle - startAngle);
-        CGMutablePathRef trapezoid = CGPathCreateMutable();
-        
-        p1 = [self pointForTrapezoidWithAngle:currentAngle + angleDelta andRadius:intRadius forCenter:center];
-        p2 = [self pointForTrapezoidWithAngle:currentAngle + angleDelta andRadius:outRadius forCenter:center];
-        
-        CGPathMoveToPoint(trapezoid, 0, p0.x, p0.y);
-        CGPathAddLineToPoint(trapezoid, 0, p1.x, p1.y);
-        CGPathAddLineToPoint(trapezoid, 0, p2.x, p2.y);
-        CGPathAddLineToPoint(trapezoid, 0, p3.x, p3.y);
-        CGPathCloseSubpath(trapezoid);
-        
-        CGPoint centerofTrapezoid = CGPointMake((p0.x + p1.x + p2.x + p3.x)/4, (p0.y + p1.y + p2.y + p3.y)/4);
-        
-        CGAffineTransform t = CGAffineTransformMakeTranslation(-centerofTrapezoid.x, -centerofTrapezoid.y);
-        CGAffineTransform s = CGAffineTransformMakeScale(1, 1);
-        CGAffineTransform concat = CGAffineTransformConcat(t, CGAffineTransformConcat(s, CGAffineTransformInvert(t)));
-        CGPathRef scaledPath = CGPathCreateCopyByTransformingPath(trapezoid, &concat);
-        
-        CGContextAddPath(ctx, scaledPath);
-        CGContextSetFillColorWithColor(ctx, currentColor.CGColor);
-        CGContextSetStrokeColorWithColor(ctx, currentColor.CGColor);
-        CGContextSetMiterLimit(ctx, 0);
-        
-        CGContextDrawPath(ctx, kCGPathFillStroke);
-        
-        CGPathRelease(trapezoid);
-        
-        if (_roundStyle) {
+        CGFloat nowStartAngle = startAngle+i*itemAngle;
+        CGFloat nowEndAngle = startAngle+(i+1)*itemAngle;
+        //当进度为0时和最后一个线条不加0.01。只有中间连接部分加
+        if (itemAngle != 0 && i != subdivCount-1) {
+            nowEndAngle += 0.01;
+        }
+        //draw item path
+        UIBezierPath *currentPath = [UIBezierPath bezierPathWithArcCenter:center radius:radius startAngle:nowStartAngle endAngle:nowEndAngle clockwise:YES];
+        [currentPath setLineWidth:_strokeWidth];
+        [currentColor setStroke];
+        [currentPath stroke];
+
+        if (_roundStyle && (i==0 || i==subdivCount-1)) {
             //画半圆
+            UIBezierPath *halfCirclePath = [UIBezierPath bezierPath];
             if (i == 0) {
-                
-                CGPoint roundCenter = CGPointMake((p0.x+p3.x)/2.0, (p0.y+p3.y)/2.0);
-                
-                CGMutablePathRef halfCircle = CGPathCreateMutable();
-                CGPathAddArc(halfCircle, &concat, roundCenter.x, roundCenter.y, (outRadius-intRadius)/2.0, M_PI-currentAngle, 2*M_PI-currentAngle, 1);
-                
-                CGContextSetFillColorWithColor(ctx, currentColor.CGColor);
-                CGContextSetStrokeColorWithColor(ctx, currentColor.CGColor);
-                
-                CGPathCloseSubpath(halfCircle);
-                
-                CGPathRef halfCirclePath = CGPathCreateCopyByTransformingPath(halfCircle, &concat);
-                
-                CGContextAddPath(ctx, halfCirclePath);
-                CGContextDrawPath(ctx, kCGPathFillStroke);
-                CGPathRelease(halfCircle);
-            } else if (i == subdivCount-1) {
-                
-                //最后一个梯形
-                CGPoint roundCenter = CGPointMake((p1.x+p2.x)/2.0, (p1.y+p2.y)/2.0);
-                
-                CGMutablePathRef halfCircle = CGPathCreateMutable();
-                CGPathAddArc(halfCircle, &concat, roundCenter.x, roundCenter.y, (outRadius-intRadius)/2.0, M_PI+currentAngle+angleDelta, 2*M_PI+currentAngle+angleDelta, 1);
-                
-                CGContextSetFillColorWithColor(ctx, currentColor.CGColor);
-                CGContextSetStrokeColorWithColor(ctx, currentColor.CGColor);
-                
-                CGPathCloseSubpath(halfCircle);
-                
-                CGPathRef halfCirclePath = CGPathCreateCopyByTransformingPath(halfCircle, &concat);
-                
-                CGContextAddPath(ctx, halfCirclePath);
-                CGContextDrawPath(ctx, kCGPathFillStroke);
-                CGPathRelease(halfCircle);
-                
-                
+                //first
+                CGPoint startCenter = CGPointMake(center.x+radius*cosf(nowStartAngle+0.01), center.y+radius*sinf(nowStartAngle+0.01));
+                [halfCirclePath addArcWithCenter:startCenter radius:0.5*_strokeWidth startAngle:nowStartAngle endAngle:nowStartAngle+M_PI clockwise:NO];
+            } else {
+                //last
+                CGPoint endCenter = CGPointMake(center.x+radius*cosf(nowEndAngle-0.01), center.y+radius*sinf(nowEndAngle-0.01));
+                [halfCirclePath addArcWithCenter:endCenter radius:0.5*_strokeWidth startAngle:nowEndAngle endAngle:nowEndAngle+M_PI clockwise:YES];
             }
+            
+            [halfCirclePath closePath];
+            [currentColor setFill];
+            [halfCirclePath fill];
         }
         
         //画小圆点
         if (_showPoint && i == subdivCount-1) {
-            CGPoint imageCenter = CGPointMake((p1.x+p2.x)/2.0, (p1.y+p2.y)/2.0);
-            CGContextDrawImage(ctx, CGRectMake(imageCenter.x-0.5*_strokeWidth, imageCenter.y-0.5*_strokeWidth, _strokeWidth, _strokeWidth), _pointImage.CGImage);
+            CGPoint imageCenter = CGPointMake(center.x+radius*cosf(nowEndAngle), center.y+radius*sinf(nowEndAngle));
+            [_pointImage drawInRect:CGRectMake(imageCenter.x-_strokeWidth/2.0, imageCenter.y-_strokeWidth/2.0, _strokeWidth, _strokeWidth)];
         }
         
         //画文字
+        //文字为什么会有锯齿？ 不是frame size不是整数的问题
         if (_showProgressText) {
             NSString *currentText = [NSString stringWithFormat:@"%.2f%%",_fakeProgress*100];
             NSMutableParagraphStyle *textStyle = [[NSMutableParagraphStyle alloc] init];
@@ -255,16 +195,8 @@
             CGRect r = CGRectMake((int)((ZZCircleSelfWidth-stringSize.width)/2.0), (int)((ZZCircleSelfHeight - stringSize.height)/2.0),(int)stringSize.width, (int)stringSize.height);
             [currentText drawInRect:r withAttributes:attributes];
         }
-        
-        p0=p1;
-        p3=p2;
-        
-        CGPathAddLineToPoint(outerEnveloppe, 0, p3.x, p3.y);
-        CGPathAddLineToPoint(innerEnveloppe, 0, p0.x, p0.y);
     }
-    
-    CGPathRelease(innerEnveloppe);
-    CGPathRelease(outerEnveloppe);
+
 }
 
 - (void)setProgress:(CGFloat)progress {
@@ -359,11 +291,6 @@
     [_endColor getRed:&c2[0] green:&c2[1] blue:&c2[2] alpha:&c2[3]];
     
     return [UIColor colorWithRed:current*c2[0]+(1-current)*c1[0] green:current*c2[1]+(1-current)*c1[1] blue:current*c2[2]+(1-current)*c1[2] alpha:current*c2[3]+(1-current)*c1[3]];
-}
-
-//获取点
-- (CGPoint)pointForTrapezoidWithAngle:(float)a andRadius:(float)r forCenter:(CGPoint)p {
-    return CGPointMake(p.x + r*cos(a), p.y + r*sin(a));
 }
 
 #pragma Set
